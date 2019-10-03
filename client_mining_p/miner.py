@@ -6,6 +6,24 @@ import sys
 
 # TODO: Implement functionality to search for a proof 
 
+    def proof_of_work(self, block):
+
+        block_string = json.dumps(block, sort_keys=True).encode()
+
+        proof = 0
+        while self.valid_proof(block_string, proof) is False:
+            proof += 1
+        return proof
+
+
+    def valid_proof(block_string, proof):
+
+
+        guess = f'{block_string}{proof}'.encode()
+        guess_hash = hashlib.sha256(guess).hexdigest()
+
+
+        return guess_hash[:6] == "000000"
 
 if __name__ == '__main__':
     # What node are we interacting with?
