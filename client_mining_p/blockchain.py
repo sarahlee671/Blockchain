@@ -83,7 +83,9 @@ class Blockchain(object):
         # easer to work with and understand.  
         return hashlib.sha256(block_string).hexdigest()
 
-
+    @property
+    def last_block(self):
+        return self.chain[-1]
 
 
     @staticmethod
@@ -155,41 +157,57 @@ node_identifier = str(uuid4()).replace('-', '')
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
-
 @app.route('/last_block', methods=['GET'])
-def last_block(self):
-    return self.chain[-1]
-
-@app.route('/mine', methods=['GET'])
-def mine():
-    # We run the proof of work algorithm to get the next proof...
-    proof = blockchain.proof_of_work(blockchain.last_block)
-
-    # We must receive a reward for finding the proof.
-    # TODO:
-    # The sender is "0" to signify that this node has mine a new coin
-    # The recipient is the current node, it did the mining!
-    # The amount is 1 coin as a reward for mining the next block
-    blockchain.new_transaction(
-        sender="0",
-        recipient=node_identifier,
-        amount=1
-    )
-
-    # Forge the new Block by adding it to the chain
-    # TODO
-    previous_hash = blockchain.hash(blockchain.last_block)
-    block = blockchain.new_block(proof, previous_hash)
-
-    # Send a response with the new block
+def last_block():
     response = {
-        'message': "New Block Forged",
-        'index': block['index'],
-        'transactions': block['transactions'],
-        'proof': block['proof'],
-        'previous_hash': block['previous_hash'],
+        'last_block': blockchain.last_block
     }
+
     return jsonify(response), 200
+
+@app.route('/mine', methods=['POST'])
+def mine():
+    values = request.get_json()
+    #check that the required fields are there
+    required = ['proof']
+    if not all(k in values for k in required):
+        return "MissingValues", 400
+
+    #verify the proof receive and give an error message when the proof is invalid
+    if not blockchain.valid_proof(blockchain.last_block["previous_hash"], values["proof"]):
+        response = {
+            'message': 'Proof is invalid'
+        }
+        return jsonify(response), 400
+    
+    else:
+
+
+        # We must receive a reward for finding the proof.
+        # TODO:
+        # The sender is "0" to signify that this node has mine a new coin
+        # The recipient is the current node, it did the mining!
+        # The amount is 1 coin as a reward for mining the next block
+        blockchain.new_transaction(
+            sender="0",
+            recipient=node_identifier,
+            amount=1
+        )
+
+        # Forge the new Block by adding it to the chain
+        # TODO
+        previous_hash = blockchain.hash(blockchain.last_block)
+        block = blockchain.new_block(proof, previous_hash)
+
+        # Send a response with the new block
+        response = {
+            'message': "New Block Forged",
+            'index': block['index'],
+            'transactions': block['transactions'],
+            'proof': block['proof'],
+            'previous_hash': block['previous_hash'],
+        }
+        return jsonify(response), 200
 
 
 @app.route('/transactions/new', methods=['POST'])
