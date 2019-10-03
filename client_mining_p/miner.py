@@ -37,8 +37,12 @@ if __name__ == '__main__':
     # Run forever until interrupted
     while True:
         # TODO: Get the last block from the server and look for a new one
+
+        #request the server for the last block
         r = requests.get(url=node+'/last_block')
+        #converted to json so server understands
         last_block = r.json()
+        #search for new proof
         new_proof = proof_of_work(last_block['last_block'])
 
         print(f"Found Proof and submitting it:{new_proof}")
